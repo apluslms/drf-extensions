@@ -56,22 +56,40 @@ class CacheResponseAndETAGMixin(ETAGMixin, CacheResponseMixin):
 
 
 class NestedViewSetMixin(object):
+    """
+    Adds filtering in get_page_size based on .parent_lookup_map definitions.
+
+    Raises:
+        Http404: If queryset.filter() raised ValueError.
+            This happens if filter string was wrong.
+    """
     def get_queryset(self):
         return self.filter_queryset_by_parents_lookups(
             super(NestedViewSetMixin, self).get_queryset()
         )
 
     def filter_queryset_by_parents_lookups(self, queryset):
-        parents_query_dict = self.get_parents_query_dict()
-        if parents_query_dict:
+        map_ = getattr(self, 'parent_lookup_map', {})
+        kwargs = self.get_parents_query_dict() # TODO: replace with {} when removed
+        for kw, filter_ in map_.items():
+            filter_ = filter_.replace('.', '__')
+            value = self.kwargs.get(kw, None)
+            if value is not None:
+                kwargs[filter_] = value
+        if kwargs:
             try:
-                return queryset.filter(**parents_query_dict)
+                return queryset.filter(**kwargs)
             except ValueError:
+                # FIXME: should probably raise ImproperlyConfigured
                 raise Http404
         else:
             return queryset
 
     def get_parents_query_dict(self):
+        """
+        Resolve legacy parent query dict.
+        Deprecated in 0.2.9 and will be removed in 0.3.0
+        """
         result = {}
         for kwarg_name, kwarg_value in six.iteritems(self.kwargs):
             if kwarg_name.startswith(extensions_api_settings.DEFAULT_PARENT_LOOKUP_KWARG_NAME_PREFIX):
@@ -82,4 +100,8 @@ class NestedViewSetMixin(object):
                 )
                 query_value = kwarg_value
                 result[query_lookup] = query_value
+
+        if result:
+            # FIXME: create warning
+            pass
         return result
