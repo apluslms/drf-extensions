@@ -388,45 +388,6 @@ Request example:
       name: "Serpuhov"
     }
 
-With nested routes you would need `NestedHyperlinkedIdentityField` instead.
-
-#### NestedHyperlinkedRelatedField
-
-Version of `rest_framework.serializer.HyperlinkedRelatedField` that handles nested routes ([about nested routes](#nested-routes)).
-You can pass dict that defines how to resolve keyword aguments for reverse url resolving using argument `lookup_map`.
-If not passed, then the map is resolved from current view or you can pass view as object or string via `lookup_map`.
-In addition, you need to define `view_name` that points to correct nested route url.
-Some examples:
-
-    from rest_framework_extensions.fields import NestedHyperlinkedRelatedField
-
-    class CitySerializer(serializers.ModelSerializer):
-        resource_uri = NestedHyperlinkedIdentityField(view_name='city-detail')
-        houses = NestedHyperlinkedRelatedField(
-            many=True,
-            view_name='houses-list',
-            lookup_map='yourapp.api_views.HousesViewSet')
-        citizens = NestedHyperlinkedRelatedField(
-            many=True,
-            view_name='citizens-detail',
-            lookup_map = {
-                'town_id': 'town.id',
-                'citizen_id': 'id',
-            })
-
-        class Meta:
-            model = City
-            fields = ('resource_uri', 'houses', 'citizens')
-
-If `lookup_map` value is callable, it will be called with selected model object as only argument.
-
-**This field is read only for now.**
-Implementation of write support is pending.
-
-#### NestedHyperlinkedIdentityField
-
-Same as `NestedHyperlinkedRelatedField` except it always uses object itself (`source='*'`).
-
 
 ### Permissions
 
